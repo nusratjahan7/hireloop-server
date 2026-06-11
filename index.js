@@ -30,7 +30,20 @@ async function run() {
         const db = client.db(process.env.AUTH_DB_NAME);
         const jobCollection = db.collection('jobs');
 
-        app.post('/jobs', async (req, res) => {
+        app.get('/api/jobs', async (req, res) => {
+            const query = {};
+            if (req.query.companyId) {
+                query.companyId = req.query.companyId;
+            }
+            if (req.query.status) {
+                query.status = req.query.status;
+            }
+            const cursor = jobCollection.find(query);
+            const result = await cursor.toArray();
+            res.send(result);
+        })
+
+        app.post('/api/jobs', async (req, res) => {
             const job = req.body;
             const result = await jobCollection.insertOne(job);
             res.send(result);
