@@ -29,6 +29,7 @@ async function run() {
 
         const db = client.db(process.env.AUTH_DB_NAME);
         const jobCollection = db.collection('jobs');
+        const companyCollection = db.collection("companies");
 
         app.get('/api/jobs', async (req, res) => {
             const query = {};
@@ -46,6 +47,22 @@ async function run() {
         app.post('/api/jobs', async (req, res) => {
             const job = req.body;
             const result = await jobCollection.insertOne(job);
+            res.send(result);
+        })
+
+        // company related apis
+        app.get('/api/my/companies', async (req, res) => {
+            const query = {};
+            if (req.query.recruiterId) {
+                query.recruiterId = req.query.recruiterId;
+            }
+            const result = await companyCollection.findOne(query);
+            res.send(result);
+        })
+
+        app.post('/api/companies', async (req, res) => {
+            const company = req.body;
+            const result = await companyCollection.insertOne(company);
             res.send(result);
         })
 
