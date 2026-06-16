@@ -30,8 +30,17 @@ async function run() {
         const db = client.db(process.env.AUTH_DB_NAME);
         const jobCollection = db.collection('jobs');
         const companyCollection = db.collection("companies");
+        const usersCollection = db.collection("user");
         const applicationsCollection = db.collection("applications");
         const planCollection = db.collection("plans");
+        const subscriptionCollection = db.collection("subscription");
+
+        // app.get('/api/users', async (req, res) => {
+
+        //     const cursor = usersCollection.find().skip(6);
+        //     const result = await cursor.toArray();
+        //     res.send(result);
+        // })
 
         app.get('/api/jobs', async (req, res) => {
             const query = {};
@@ -115,6 +124,27 @@ async function run() {
             }
             const plan = await planCollection.findOne(query);
             res.send(plan);
+        })
+
+        // subscription
+        app.post('/api/subscriptions', async (req, res) => {
+            const data = req.body;
+            const subsInfo = {
+                ...data,
+                createdAt: new Date()
+            }
+            const result = await subscriptionCollection.insertOne(subsInfo);
+
+            // update the user plan information
+            const filter = { email: data.email };
+            // update the value
+            const updateDocument = {
+                $set: {
+                    plan: data.planId,
+                }
+            };
+            const updateResult = await usersCollection.updateOne(filter, updateDocument);
+            res.send(updateResult);
         })
 
         await client.db("admin").command({ ping: 1 });
