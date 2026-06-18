@@ -11,6 +11,15 @@ const PORT = process.env.PORT;
 app.use(cors());
 app.use(express.json());
 
+const logger = (req, res, next) => {
+    console.log('logger logged', req.params);
+    next();
+}
+
+const verifyToken = (req, res, next) => {
+    console.log('headers', req.headers);
+    next();
+}
 
 const uri = process.env.MONGODB_URI;
 
@@ -118,16 +127,16 @@ async function run() {
         })
 
         // inefficient way to join collection
-        app.get('/api/companies2', async (req, res) => {
-            const pipeline = [
-                {
-                    $skip: 5
-                }
-            ]
-            const cursor = companyCollection.aggregate(pipeline);
-            const result = await cursor.toArray();
-            res.send(result);
-        })
+        // app.get('/api/companies2', async (req, res) => {
+        //     const pipeline = [
+        //         {
+        //             $skip: 5
+        //         }
+        //     ]
+        //     const cursor = companyCollection.aggregate(pipeline);
+        //     const result = await cursor.toArray();
+        //     res.send(result);
+        // })
 
         app.get('/api/my/companies', async (req, res) => {
             const query = {};
@@ -148,7 +157,7 @@ async function run() {
             res.send(result);
         })
 
-        app.patch('/api/companies/:id', async (req, res) => {
+        app.patch('/api/companies/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
             const updatedCompany = req.body;
             const filter = { _id: new ObjectId(id) }
