@@ -66,12 +66,29 @@ async function run() {
             next();
         }
 
+        // must be used after verify token middleware
         const verifySeeker = async (req, res, next) => {
             if (req.user?.role == 'seeker') {
                 return res.status(403).send({ message: 'forbidden access' })
             }
             next();
         }
+
+        const verifyRecruiter = async (req, res, next) => {
+            if (req.user?.role == 'recruiter') {
+                return res.status(403).send({ message: 'forbidden access' })
+            }
+            next();
+        }
+
+        const verifyAdmin = async (req, res, next) => {
+            if (req.user?.role == 'admin') {
+                return res.status(403).send({ message: 'forbidden access' })
+            }
+            next();
+        }
+
+        /-------------/
 
         app.get('/api/users', async (req, res) => {
             const cursor = usersCollection.find();
@@ -116,7 +133,10 @@ async function run() {
                 query.applicantId = req.query.applicantId;
 
                 // check whether asking for user information or someone else
-                console.log(req.user, req.query.applicantId);
+
+                if (req.user._id.toString() !== req.query.applicantId) {
+                    return res.status(403).send({ message: 'forbidden access' })
+                }
             }
             if (req.query.jobId) {
                 query.jobId = req.query.jobId;
@@ -188,7 +208,7 @@ async function run() {
             res.send(result);
         })
 
-        app.patch('/api/companies/:id', verifyToken, async (req, res) => {
+        app.patch('/api/companies/:id', verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const updatedCompany = req.body;
             const filter = { _id: new ObjectId(id) }
