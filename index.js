@@ -12,22 +12,7 @@ app.use(cors());
 app.use(express.json());
 
 const logger = (req, res, next) => {
-    console.log('logger logged', req.params);
-    next();
-}
-
-const verifyToken = (req, res, next) => {
-    console.log('headers', req.headers);
-    const authHeader = req.headers?.authorization;
-    if (!authHeader) {
-        return res.status(401).send({ message: 'unauthorized access' })
-    }
-
-    const token = authHeader.split(' ')[1];
-
-    if (!token) {
-        return res.status(401).send({ message: 'unauthorized access' })
-    }
+    // console.log('logger logged', req.params);
     next();
 }
 
@@ -53,13 +38,46 @@ async function run() {
         const applicationsCollection = db.collection("applications");
         const planCollection = db.collection("plans");
         const subscriptionCollection = db.collection("subscription");
+        const sessionCollection = db.collection("session");
+        // verification related 
 
-        // app.get('/api/users', async (req, res) => {
+        const verifyToken = async (req, res, next) => {
+            console.log('headers', req.headers);
+            const authHeader = req.headers?.authorization;
+            if (!authHeader) {
+                return res.status(401).send({ message: 'unauthorized access' })
+            }
 
-        //     const cursor = usersCollection.find().skip(6);
-        //     const result = await cursor.toArray();
-        //     res.send(result);
-        // })
+            const token = authHeader.split(' ')[1];
+
+            if (!token) {
+                return res.status(401).send({ message: 'unauthorized access' })
+            }
+
+            const query = { token: token }
+            const session = await sessionCollection.findOne(query);
+            const userId = session.userId;
+            const userQuery = {
+                _id: userId
+            }
+            const user = await usersCollection.findOne(userQuery);
+            // set data in the req object
+            req.user = user;
+            next();
+        }
+
+        const verifySeeker = async (req, res, next) => {
+            if (req.user?.role == 'seeker') {
+                return res.status(403).send({ message: 'forbidden access' })
+            }
+            next();
+        }
+
+        app.get('/api/users', async (req, res) => {
+            const cursor = usersCollection.find();
+            const result = await cursor.toArray();
+            res.send(result);
+        })
 
         app.get('/api/jobs', async (req, res) => {
             const query = {};
@@ -92,10 +110,13 @@ async function run() {
         })
 
         // application related api
-        app.get('/api/application', async (req, res) => {
+        app.get('/api/application', verifyToken, verifySeeker, async (req, res) => {
             const query = {};
             if (req.query.applicantId) {
                 query.applicantId = req.query.applicantId;
+
+                // check whether asking for user information or someone else
+                console.log(req.user, req.query.applicantId);
             }
             if (req.query.jobId) {
                 query.jobId = req.query.jobId;
