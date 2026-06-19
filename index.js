@@ -42,7 +42,6 @@ async function run() {
         // verification related 
 
         const verifyToken = async (req, res, next) => {
-            console.log('headers', req.headers);
             const authHeader = req.headers?.authorization;
             if (!authHeader) {
                 return res.status(401).send({ message: 'unauthorized access' })
@@ -56,11 +55,21 @@ async function run() {
 
             const query = { token: token }
             const session = await sessionCollection.findOne(query);
+
+            if (!session) {
+                return res.status(401).send({ message: 'unauthorized access' })
+            }
+
             const userId = session.userId;
             const userQuery = {
                 _id: userId
             }
             const user = await usersCollection.findOne(userQuery);
+
+            if (!user) {
+                return res.status(401).send({ message: 'unauthorized access' })
+            }
+
             // set data in the req object
             req.user = user;
             next();
@@ -90,14 +99,15 @@ async function run() {
 
         /-------------/
 
-        app.get('/api/users', async (req, res) => {
-            const cursor = usersCollection.find();
-            const result = await cursor.toArray();
-            res.send(result);
-        })
-
+        // jobs related api
         app.get('/api/jobs', async (req, res) => {
             const query = {};
+            // job filter related query
+            if (req.query.jobType) {
+                query.jobType = req.query.jobType
+            }
+
+            // company related query
             if (req.query.companyId) {
                 query.companyId = req.query.companyId;
             }
