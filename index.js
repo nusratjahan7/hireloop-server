@@ -103,8 +103,23 @@ async function run() {
         app.get('/api/jobs', async (req, res) => {
             const query = {};
             // job filter related query
+            if (req.query.search) {
+                query.$or = [
+                    { jobTitle: { $regex: req.query.search, $options: 'i' } },
+                    { companyName: { $regex: req.query.search, $options: 'i' } }
+                ]
+            }
+
             if (req.query.jobType) {
                 query.jobType = req.query.jobType
+            }
+
+            if (req.query.jobCategory) {
+                query.jobCategory = req.query.jobCategory
+            }
+
+            if (req.query.isRemote) {
+                query.isRemote = req.query.isRemote
             }
 
             // company related query
