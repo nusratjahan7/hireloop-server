@@ -129,6 +129,18 @@ async function run() {
             if (req.query.status) {
                 query.status = req.query.status;
             }
+
+            // pagination related
+            if (req.query.page) {
+                const page = req.query.page;
+                const perPage = req.query.perPage || 12;
+                const skipItems = (page - 1) * perPage;
+
+                const cursor = jobCollection.find(query).skip(skipItems).limit(perPage);
+                const jobs = await cursor.toArray();
+                return res.send(jobs);
+            }
+
             const cursor = jobCollection.find(query);
             const result = await cursor.toArray();
             res.send(result);
